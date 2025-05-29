@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.flipfopradio.R
 import com.example.flipfopradio.ui.theme.FlipFopRadioTheme
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -130,7 +132,7 @@ fun MusicPlayerUI() {
             modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(onClick = {}) {
-                Icon(Icons.Default.PlayArrow, contentDescription = "Previous", modifier = Modifier.size(40.dp))
+                Icon(Icons.Default.SkipPrevious, contentDescription = "Previous", modifier = Modifier.size(40.dp))
             }
 
             Box(
@@ -146,7 +148,7 @@ fun MusicPlayerUI() {
             }
 
             IconButton(onClick = {}) {
-                Icon(Icons.Default.Check, contentDescription = "Next", modifier = Modifier.size(40.dp))
+                Icon(Icons.Default.SkipNext, contentDescription = "Next", modifier = Modifier.size(40.dp))
             }
         }
     }
