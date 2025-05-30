@@ -1,67 +1,144 @@
 package com.example.musicapp
 
+import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Slider
-import androidx.compose.material.SliderDefaults
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.flipfopradio.R
 import com.example.flipfopradio.ui.theme.FlipFopRadioTheme
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
+import formatTime
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-                FlipFopRadioTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
-                    MusicPlayerUI()
-                }
+            FlipFopRadioTheme {
+                MusicPlayerApp()
             }
         }
     }
 }
 
 @Composable
-fun MusicPlayerUI() {
-    var sliderPosition by remember { mutableStateOf(0f) }
+fun MusicPlayerApp() {
+    var isDarkTheme by remember { mutableStateOf(true) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(if (isDarkTheme) Color(0xFF121212) else Color(0xFFFFFFFF))
+    ) {
+        // Botão para trocar tema
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Button(
+                onClick = { isDarkTheme = !isDarkTheme },
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = if (isDarkTheme) Color(0xFFBB86FC) else Color(0xFF6200EE),
+                    contentColor = Color.White
+                )
+            ) {
+                Icon(
+                    imageVector = if (isDarkTheme) Icons.Default.WbSunny else Icons.Default.NightsStay,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(if (isDarkTheme) "Tema Claro" else "Tema Escuro")
+            }
+        }
+
+        if (isDarkTheme) {
+            MusicPlayerUI(darkTheme = true)
+        } else {
+            MusicPlayerUI(darkTheme = false)
+        }
+    }
+}
+
+@Composable
+fun MusicPlayerUI(darkTheme: Boolean) {
+    val imagens = listOf(R.drawable.imagemmusic, R.drawable.imagemusic2)
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    val musicas = listOf(R.raw.musica1, R.raw.musica2)
+    var currentIndex by remember { mutableStateOf(0) }
+    var isPlaying by remember { mutableStateOf(false) }
+    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+    var position by remember { mutableStateOf(0f) }
+    var duration by remember { mutableStateOf(1f) }
+
+    fun playMusic(index: Int) {
+        mediaPlayer?.release()
+        mediaPlayer = MediaPlayer.create(context, musicas[index])
+        duration = mediaPlayer?.duration?.toFloat() ?: 1f
+        mediaPlayer?.start()
+        isPlaying = true
+    }
+
+    fun togglePlayPause() {
+        if (mediaPlayer?.isPlaying == true) {
+            mediaPlayer?.pause()
+            isPlaying = false
+        } else {
+            mediaPlayer?.start()
+            isPlaying = true
+        }
+    }
+
+    fun nextMusic() {
+        currentIndex = (currentIndex + 1) % musicas.size
+        playMusic(currentIndex)
+    }
+
+    fun previousMusic() {
+        currentIndex = if (currentIndex == 0) musicas.lastIndex else currentIndex - 1
+        playMusic(currentIndex)
+    }
+
+    LaunchedEffect(isPlaying) {
+        while (true) {
+            if (isPlaying) {
+                position = mediaPlayer?.currentPosition?.toFloat() ?: 0f
+            }
+            delay(500)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            mediaPlayer?.release()
+        }
+    }
+
+    val backgroundColor = if (darkTheme) Color(0xFF121212) else Color(0xFFFFFFFF)
+    val textColor = if (darkTheme) Color.White else Color.Black
+    val accentColor = if (darkTheme) Color(0xFFBB86FC) else Color(0xFF6200EE)
 
     Column(
         modifier = Modifier
@@ -70,87 +147,92 @@ fun MusicPlayerUI() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Playlist title
         Text(
-            text = "Playlist Estudos",
+            text = "Playlist de Estudos",
+            fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            modifier = Modifier.padding(top = 16.dp)
+            color = textColor
         )
 
-        // Music cover
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
         Box(
             modifier = Modifier
-                .size(290.dp)
+                .size(270.dp)
                 .clip(MaterialTheme.shapes.medium)
-                .background(Color.LightGray)
         ) {
-            // You can use a real image with painterResource(R.drawable.your_image)
             Image(
-                painter = painterResource(id = R.drawable.imagemmusic),
-                contentDescription = "Cover Image",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                painter = painterResource(id = imagens[currentIndex]),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
         }
 
-        // Music info
         Spacer(modifier = Modifier.height(32.dp))
-        Text(text = "music", fontSize = 14.sp, color = Color.Gray)
+
         Text(
             text = "Flip fop Radio",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
+            fontSize = 18.sp,
+            color = textColor,
+            fontWeight = FontWeight.SemiBold
         )
 
-        // Progress bar
         Spacer(modifier = Modifier.height(24.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "00:00", fontSize = 12.sp)
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(text = formatTime(position.toInt()), fontSize = 12.sp, color = textColor)
             Slider(
-                value = sliderPosition,
-                onValueChange = { sliderPosition = it },
+                value = position,
+                onValueChange = {
+                    position = it
+                    mediaPlayer?.seekTo(it.toInt())
+                },
+                valueRange = 0f..duration,
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 8.dp),
                 colors = SliderDefaults.colors(
-                    thumbColor = Color.Gray,
-                    activeTrackColor = Color.Red
+                    thumbColor = textColor,
+                    activeTrackColor = accentColor
                 )
             )
-            Text(text = "03:00", fontSize = 12.sp)
+            Text(text = formatTime(duration.toInt()), fontSize = 12.sp, color = textColor)
         }
 
-        // Controls
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
         Row(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.SkipPrevious, contentDescription = "Previous", modifier = Modifier.size(40.dp))
+            IconButton(onClick = { previousMusic() }) {
+                Icon(Icons.Default.SkipPrevious, contentDescription = null, tint = textColor, modifier = Modifier.size(40.dp))
             }
 
             Box(
                 modifier = Modifier
-                    .size(64.dp)
+                    .size(70.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFFFA500)), // Orange
+                    .background(accentColor),
                 contentAlignment = Alignment.Center
             ) {
-                IconButton(onClick = {}) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = Color.Black, modifier = Modifier.size(40.dp))
+                IconButton(onClick = {
+                    if (!isPlaying) playMusic(currentIndex) else togglePlayPause()
+                }) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(40.dp)
+                    )
                 }
             }
 
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.SkipNext, contentDescription = "Next", modifier = Modifier.size(40.dp))
+            IconButton(onClick = { nextMusic() }) {
+                Icon(Icons.Default.SkipNext, contentDescription = null, tint = textColor, modifier = Modifier.size(40.dp))
             }
         }
     }
 }
-
